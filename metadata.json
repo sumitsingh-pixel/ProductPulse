@@ -1,0 +1,8 @@
+{
+  "name": "Copy of Product Pulse dashboard ga4 final deployment",
+  "description": "A comprehensive suite for product managers featuring SEO auditing, GA4 KPI recommendation engines, and AI-driven Epic/Story prioritization.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
