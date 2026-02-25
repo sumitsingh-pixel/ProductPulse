@@ -1,14 +1,26 @@
-
 export enum ToolType {
   SEO_Lighthouse = 'SEO_Lighthouse',
   GA4_KPI = 'GA4_KPI',
   EPIC_PRIORITY = 'EPIC_PRIORITY',
-  SENTIMENT_ANALYSIS = 'SENTIMENT_ANALYSIS'
+  SENTIMENT_ANALYSIS = 'SENTIMENT_ANALYSIS',
+  RELEASE_REPORTING = 'RELEASE_REPORTING'
 }
 
 export enum UserRole {
+  ADMIN = 'ADMIN',
   EDITOR = 'EDITOR',
-  VIEWER = 'VIEWER'
+  VIEWER = 'VIEWER',
+  GUEST = 'GUEST'
+}
+
+export interface UserProfile {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: UserRole;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ProjectContext {
@@ -19,6 +31,7 @@ export interface ProjectContext {
   tenant_id?: string;
   domain_name?: string;
   is_demo?: boolean;
+  user_id?: string;
 }
 
 export interface ChartConfig {
