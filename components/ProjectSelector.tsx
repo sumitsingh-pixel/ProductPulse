@@ -9,7 +9,21 @@ interface Props {
   onSelect: (project: ProjectContext) => void;
   onCreateNew: () => void;
   onInjectDemo?: (type: 'SaaS' | 'Mobile') => void;
+  onDelete && !p.is_demo && (
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      if (window.confirm(`Delete project "${p.name}"?...`)) {
+        onDelete(p);
+      }
+    }}
+    className="p-2 rounded-xl bg-rose-500/10 text-rose-400..."
+  >
+    <Trash2 className="w-4 h-4" />
+  </button>
+)
 }
+
 
 export const ProjectSelector: React.FC<Props> = ({ projects, role, onSelect, onCreateNew, onInjectDemo }) => {
   if (projects.length === 0) {
