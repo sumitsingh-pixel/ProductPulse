@@ -6,6 +6,18 @@ import { ProjectContext, KPIDictionary, KPIThreshold, KPIFact, CSVUploadLog, Jir
  * Executes a Supabase query with a safety timeout and retry logic.
  * Optimized to balance between fast-failing for UI snappiness and waiting for slow connections.
  */
+async deleteWorkspace(id: string): Promise<void> {
+  const { error } = await supabase.from('workspaces').delete().eq('id', id);
+  if (error) throw error;
+  
+  // Clear cache
+  const cachedRaw = localStorage.getItem('productpulse_workspaces_cache');
+  if (cachedRaw) {
+    const cached = JSON.parse(cachedRaw);
+    const updated = cached.filter((w: ProjectContext) => w.id !== id);
+    localStorage.setItem('productpulse_workspaces_cache', JSON.stringify(updated));
+  }
+}
 async function safeQuery<T>(
   promiseFn: () => Promise<{data: T | null, error: any}>, 
   defaultVal: T, 
