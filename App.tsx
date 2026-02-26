@@ -427,24 +427,7 @@ const App: React.FC = () => {
   useEffect(() => {
     let isInitialized = false;
 
-          const handleDeleteProject = async (project: ProjectContext) => {
-  setLoading(true);
-  try {
-    if (project.id && !project.is_demo && !project.id.startsWith('local-')) {
-      await databaseService.deleteWorkspace(project.id);
-    }
-    setProjects(prev => prev.filter(p => p.id !== project.id));
-    if (activeProject?.id === project.id) {
-      setActiveProject(null);
-      setActiveTool(null);
-    }
-    setNotification(`Project "${project.name}" deleted successfully.`);
-  } catch (err: any) {
-    setNotification(`Failed to delete project: ${err.message}`);
-  } finally {
-    setLoading(false);
-  }
-};
+
           
     const initialize = async () => {
       if (isInitialized) return;
