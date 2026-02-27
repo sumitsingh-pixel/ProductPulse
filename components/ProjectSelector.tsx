@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { ProjectContext, UserRole } from '../types';
-import { Briefcase, Plus, Calendar, ArrowRight, FolderOpen, FolderPlus, SearchX, Sparkles, LayoutDashboard, Globe, Smartphone } from 'lucide-react';
+// import { Briefcase, Plus, Calendar, ArrowRight, FolderOpen, FolderPlus, SearchX, Sparkles, LayoutDashboard, Globe, Smartphone } from 'lucide-react';
+import { Briefcase, Plus, Calendar, ArrowRight, FolderOpen, FolderPlus, SearchX, Sparkles, LayoutDashboard, Globe, Smartphone, Trash2 } from 'lucide-react';
 
 interface Props {
   projects: ProjectContext[];
