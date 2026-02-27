@@ -1,17 +1,6 @@
-
 import React from 'react';
 import { ProjectContext, UserRole } from '../types';
-// import { Briefcase, Plus, Calendar, ArrowRight, FolderOpen, FolderPlus, SearchX, Sparkles, LayoutDashboard, Globe, Smartphone } from 'lucide-react';
 import { Briefcase, Plus, Calendar, ArrowRight, FolderOpen, FolderPlus, SearchX, Sparkles, LayoutDashboard, Globe, Smartphone, Trash2 } from 'lucide-react';
-
-// interface Props {
-//   projects: ProjectContext[];
-//   role: UserRole;
-//   onSelect: (project: ProjectContext) => void;
-//   onCreateNew: () => void;
-//   onInjectDemo?: (type: 'SaaS' | 'Mobile') => void;
-  
-// }
 
 interface Props {
   projects: ProjectContext[];
@@ -22,8 +11,6 @@ interface Props {
   onDelete?: (project: ProjectContext) => void;
 }
 
-
-// export const ProjectSelector: React.FC<Props> = ({ projects, role, onSelect, onCreateNew, onInjectDemo }) => {
 export const ProjectSelector: React.FC<Props> = ({ projects, role, onSelect, onCreateNew, onInjectDemo, onDelete }) => {
   if (projects.length === 0) {
     return (
@@ -99,94 +86,61 @@ export const ProjectSelector: React.FC<Props> = ({ projects, role, onSelect, onC
         </button>
       </div>
 
-      {/* <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 px-4">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 px-4">
         {projects.map((p, idx) => (
-          <button
+          <div
             key={p.id || idx}
-            onClick={() => onSelect(p)}
-            className={`text-left glass-card p-10 rounded-[3.5rem] border-2 shadow-lg hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.5)] hover:border-teal-500/30 hover:-translate-y-2 transition-all group flex flex-col h-full relative overflow-hidden ${p.is_demo ? 'border-teal-500/10' : 'border-white/5'}`}
+            className={`text-left glass-card p-10 rounded-[3.5rem] border-2 shadow-lg hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.5)] transition-all group flex flex-col h-full relative overflow-hidden ${p.is_demo ? 'border-teal-500/10' : 'border-white/5'}`}
           >
             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity">
                <FolderOpen className="w-32 h-32 -rotate-12" />
             </div>
             
-            <div className="flex items-center justify-between mb-10">
+            <div className="flex items-center justify-between mb-10 relative z-20">
               <div className={`p-4 rounded-2xl group-hover:bg-teal-500 group-hover:text-slate-900 transition-all shadow-2xl border border-white/5 ${p.is_demo ? 'bg-slate-800 text-teal-400' : 'bg-slate-800 text-slate-400'}`}>
                 {p.type === 'Mobile' ? <Smartphone className="w-6 h-6" /> : <FolderOpen className="w-6 h-6" />}
               </div>
-              <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${p.is_demo ? 'bg-teal-500/10 text-teal-400 border-teal-500/20' : 'bg-slate-800/50 text-slate-500 border-white/5'}`}>
-                {p.is_demo ? 'Simulation Node' :'*'}
+              <div className="flex items-center gap-3">
+                <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${p.is_demo ? 'bg-teal-500/10 text-teal-400 border-teal-500/20' : 'bg-slate-800/50 text-slate-500 border-white/5'}`}>
+                  {p.is_demo ? 'Simulation Node' :'*'}
+                </div>
+                {onDelete && !p.is_demo && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      if (window.confirm(`Delete project "${p.name}"? This will remove all associated data.`)) {
+                        onDelete(p);
+                      }
+                    }}
+                    className="p-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-all border border-rose-500/20 hover:border-rose-500 relative z-30"
+                    title="Delete Project"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="flex-1 relative z-10">
+            <button
+              onClick={() => onSelect(p)}
+              className="flex-1 relative z-10 text-left w-full"
+            >
               <span className="text-[10px] font-black text-teal-500 uppercase tracking-[0.4em] mb-3 block">{p.type} Module</span>
               <h3 className="text-3xl font-black text-white leading-tight mb-4 group-hover:text-teal-400 transition-colors tracking-tight">{p.name}</h3>
               <p className="text-slate-400 font-semibold text-sm line-clamp-3 leading-relaxed mb-8">{p.description}</p>
-            </div>
+            </button>
 
-            <div className="pt-8 border-t border-white/5 flex items-center justify-between relative z-10">
+            <button
+              onClick={() => onSelect(p)}
+              className="pt-8 border-t border-white/5 flex items-center justify-between relative z-10 w-full"
+            >
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-teal-500 transition-colors">Open Project</span>
               <ArrowRight className="w-5 h-5 text-slate-600 group-hover:text-teal-400 group-hover:translate-x-2 transition-all" />
-            </div>
-          </button>
-        ))}
-      </div> */}
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 px-4">
-  {projects.map((p, idx) => (
-    <div
-      key={p.id || idx}
-      className={`text-left glass-card p-10 rounded-[3.5rem] border-2 shadow-lg hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.5)] transition-all group flex flex-col h-full relative overflow-hidden ${p.is_demo ? 'border-teal-500/10' : 'border-white/5'}`}
-    >
-      <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-20 transition-opacity">
-         <FolderOpen className="w-32 h-32 -rotate-12" />
-      </div>
-      
-      <div className="flex items-center justify-between mb-10">
-        <div className={`p-4 rounded-2xl group-hover:bg-teal-500 group-hover:text-slate-900 transition-all shadow-2xl border border-white/5 ${p.is_demo ? 'bg-slate-800 text-teal-400' : 'bg-slate-800 text-slate-400'}`}>
-          {p.type === 'Mobile' ? <Smartphone className="w-6 h-6" /> : <FolderOpen className="w-6 h-6" />}
-        </div>
-        <div className="flex items-center gap-3">
-          <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${p.is_demo ? 'bg-teal-500/10 text-teal-400 border-teal-500/20' : 'bg-slate-800/50 text-slate-500 border-white/5'}`}>
-            {p.is_demo ? 'Simulation Node' :'*'}
-          </div>
-          {onDelete && !p.is_demo && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (window.confirm(`Delete project "${p.name}"? This will remove all associated data.`)) {
-                  onDelete(p);
-                }
-              }}
-              className="p-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-all border border-rose-500/20 hover:border-rose-500"
-              title="Delete Project"
-            >
-              <Trash2 className="w-4 h-4" />
             </button>
-          )}
-        </div>
+          </div>
+        ))}
       </div>
-
-      <button
-        onClick={() => onSelect(p)}
-        className="flex-1 relative z-10 text-left w-full"
-      >
-        <span className="text-[10px] font-black text-teal-500 uppercase tracking-[0.4em] mb-3 block">{p.type} Module</span>
-        <h3 className="text-3xl font-black text-white leading-tight mb-4 group-hover:text-teal-400 transition-colors tracking-tight">{p.name}</h3>
-        <p className="text-slate-400 font-semibold text-sm line-clamp-3 leading-relaxed mb-8">{p.description}</p>
-      </button>
-
-      <button
-        onClick={() => onSelect(p)}
-        className="pt-8 border-t border-white/5 flex items-center justify-between relative z-10 w-full"
-      >
-        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-teal-500 transition-colors">Open Project</span>
-        <ArrowRight className="w-5 h-5 text-slate-600 group-hover:text-teal-400 group-hover:translate-x-2 transition-all" />
-      </button>
-    </div>
-  ))}
-</div>
     </div>
   );
 };
