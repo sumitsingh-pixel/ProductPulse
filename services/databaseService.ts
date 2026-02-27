@@ -104,6 +104,20 @@ export const databaseService = {
     return data;
   },
 
+
+  async deleteWorkspace(id: string): Promise<void> {
+  const { error } = await supabase.from('workspaces').delete().eq('id', id);
+  if (error) throw error;
+  
+  // Clear cache after deletion
+  const cachedRaw = localStorage.getItem('productpulse_workspaces_cache');
+  if (cachedRaw) {
+    const cached = JSON.parse(cachedRaw);
+    const updated = cached.filter((w: ProjectContext) => w.id !== id);
+    localStorage.setItem('productpulse_workspaces_cache', JSON.stringify(updated));
+  }
+},
+
   // JIRA CORE
   async getJiraConnection(): Promise<JiraConnection | null> {
     const { data: { user } } = await supabase.auth.getUser();
