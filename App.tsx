@@ -570,6 +570,33 @@ const App: React.FC = () => {
     }
   };
 
+        const handleDeleteProject = async (project: ProjectContext) => {
+  setLoading(true);
+  try {
+    // If it's a real project (has id and not demo), delete from database
+    if (project.id && !project.is_demo && !project.id.startsWith('local-')) {
+      await databaseService.deleteWorkspace(project.id);
+    }
+    
+    // Remove from local state
+    setProjects(prev => prev.filter(p => p.id !== project.id));
+    
+    // If this was the active project, clear it
+    if (activeProject?.id === project.id) {
+      setActiveProject(null);
+      setActiveTool(null);
+    }
+    
+    setNotification(`Project "${project.name}" deleted successfully.`);
+    setTimeout(() => setNotification(null), 3000);
+  } catch (err: any) {
+    console.error('Delete project error:', err);
+    setNotification(`Failed to delete project: ${err.message}`);
+    setTimeout(() => setNotification(null), 5000);
+  } finally {
+    setLoading(false);
+  }
+};
   const handleToolSelect = (toolId: ToolType) => {
     setNotification(null);
     setActiveTool(toolId);
@@ -670,12 +697,13 @@ const App: React.FC = () => {
             </div>
           )}
           <ProjectSelector 
-            projects={projects} 
-            role={userRole}
-            onSelect={setActiveProject} 
-            onCreateNew={() => setShowSetup(true)} 
-            onInjectDemo={handleInjectDemoData}
-          />
+  projects={projects} 
+  role={userRole}
+  onSelect={setActiveProject} 
+  onCreateNew={() => setShowSetup(true)} 
+  onInjectDemo={handleInjectDemoData}
+  onDelete={handleDeleteProject}
+/>
         </div>
       );
     }
