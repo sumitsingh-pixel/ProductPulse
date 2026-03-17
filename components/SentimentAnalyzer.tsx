@@ -60,10 +60,16 @@ export const SentimentAnalyzer: React.FC<Props> = ({ role }) => {
     setLoading(true);
     setError(null);
     try {
+      // const result = await performSentimentAudit(url, sources);
+      // await databaseService.saveSentimentAudit(url, result);
+      // setAudit(result);
       const result = await performSentimentAudit(url, sources);
-      await databaseService.saveSentimentAudit(url, result);
-      setAudit(result);
-      setFlowStep('results');
+if (!result || !result.metrics) {
+  setError("Analysis returned incomplete data. Please try again.");
+  return;
+}
+setAudit(result);
+setFlowStep('results');
       setActiveTab('assessment');
     } catch (err: any) {
       setError(err.message || "Audit engine failure.");
