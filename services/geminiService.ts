@@ -146,9 +146,95 @@ export const detectReviewSources = async (url: string): Promise<ReviewSource[]> 
 //     throw err;
 //   }
 // };
+// export const performSentimentAudit = async (url: string, sources: ReviewSource[]): Promise<SentimentAudit> => {
+//   // Step 1: Fetch real reviews from our Vercel scrape endpoint
+//   let realReviews: any[] = [];
+//   try {
+//     const scrapeRes = await fetch('/api/sentiment/scrape', {
+//       method: 'POST',
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify({ sources })
+//     });
+//     if (scrapeRes.ok) {
+//       // const scrapeData = await scrapeRes.json();
+//       // realReviews = scrapeData.reviews || [];
+//       const scrapeData = await scrapeRes.json();
+// realReviews = scrapeData.reviews || [];
+// const computedMetrics = scrapeData.metrics || null; 
+//     }
+//   } catch (err) {
+//     console.warn('[Sentiment] Scrape step failed, proceeding with empty reviews:', err);
+//   }
+
+//   const hasRealData = realReviews.length > 0;
+
+//   // Step 2: Build Gemini prompt with real review text as context
+//   const ai = getAIClient();
+
+//   const reviewContext = hasRealData
+//     ? `REAL SCRAPED REVIEWS (${realReviews.length} reviews):\n${JSON.stringify(realReviews.slice(0, 80))}`
+//     : `NO REAL REVIEWS COULD BE SCRAPED. The user has verified the following sources exist: ${JSON.stringify(sources)}. 
+//        Clearly state in your summary that this analysis is based on limited data and the confidence scores should be low (below 40).`;
+
+//   const prompt = `Perform a Sentiment Analysis and UX Audit for: "${url}".
+
+// ${reviewContext}
+// const metricsContext = computedMetrics
+//   ? `\nPRE-COMPUTED METRICS (use these exact values, do not recalculate):\n${JSON.stringify(computedMetrics)}`
+//   : '';
+//   ${metricsContext}
+
+// INSTRUCTIONS:
+// - Base ALL metrics and scores ONLY on the real review data provided above.
+// - If no real reviews were provided, set all confidence scores below 40 and clearly note limited data.
+// - Do NOT invent review text. The "verificationData" array must ONLY contain reviews from the REAL SCRAPED REVIEWS list above.
+// - Calculate overallSatisfaction from average star ratings in the real data.
+// - Calculate NPS from the distribution of 1-2 star (detractors), 3 star (passives), 4-5 star (promoters).
+// - Identify real themes from actual review text.
+
+// REQUIRED JSON STRUCTURE:
+// {
+//   "url": string,
+//   "timestamp": string (ISO),
+//   "sources": ${JSON.stringify(sources)},
+//   "metrics": {
+//     "overallSatisfaction": { "value": number 0-100, "confidence": number 0-100, "dataPoints": number },
+//     "taskCompletion": { "value": number 0-100, "confidence": number 0-100, "dataPoints": number },
+//     "abandonmentRate": { "value": number 0-100, "confidence": number 0-100, "dataPoints": number },
+//     "nps": { "value": number -100 to 100, "confidence": number 0-100, "dataPoints": number }
+//   },
+//   "summary": { "overview": string, "keyFindings": string, "overallImpression": string },
+//   "visuals": {
+//     "desktopVsMobile": { "metrics": ["Navigation","Readability","Speed","Accessibility"], "desktop": [n,n,n,n], "mobile": [n,n,n,n] },
+//     "issuePriority": [ { "category": string, "value": number, "severity": "critical"|"high"|"medium" } ],
+//     "sentimentTrend": [ { "date": string, "score": number } ]
+//   },
+//   "usabilityParadox": string,
+//   "wcagIssues": [ { "standard": string, "description": string } ],
+//   "iaIssues": [string],
+//   "digitalEquityImpact": string,
+//   "recommendations": [ { "id": number, "title": string, "impact": "High"|"Medium"|"Low", "description": string, "timeline": string, "outcome": string } ],
+//   "verificationData": [ { "source": string, "rating": number, "date": string, "review": string, "aiInterpretation": string, "sentiment": "positive"|"negative"|"neutral" } ],
+//   "quotes": { "positive": [{ "text": string, "source": string }], "negative": [{ "text": string, "source": string }] }
+// }`;
+
+//   const response = await ai.models.generateContent({
+//     model: 'gemini-2.5-flash-preview-04-17',
+//     contents: prompt,
+//     config: {
+//       responseMimeType: "application/json",
+//       thinkingConfig: { thinkingBudget: 5000 }
+//     }
+//   });
+
+//   return safeParse(response.text, "Sentiment Audit") || null;
+// };
+
 export const performSentimentAudit = async (url: string, sources: ReviewSource[]): Promise<SentimentAudit> => {
   // Step 1: Fetch real reviews from our Vercel scrape endpoint
   let realReviews: any[] = [];
+  let computedMetrics: any = null;
+
   try {
     const scrapeRes = await fetch('/api/sentiment/scrape', {
       method: 'POST',
@@ -156,11 +242,9 @@ export const performSentimentAudit = async (url: string, sources: ReviewSource[]
       body: JSON.stringify({ sources })
     });
     if (scrapeRes.ok) {
-      // const scrapeData = await scrapeRes.json();
-      // realReviews = scrapeData.reviews || [];
       const scrapeData = await scrapeRes.json();
-realReviews = scrapeData.reviews || [];
-const computedMetrics = scrapeData.metrics || null; 
+      realReviews = scrapeData.reviews || [];
+      computedMetrics = scrapeData.metrics || null;
     }
   } catch (err) {
     console.warn('[Sentiment] Scrape step failed, proceeding with empty reviews:', err);
@@ -176,59 +260,20 @@ const computedMetrics = scrapeData.metrics || null;
     : `NO REAL REVIEWS COULD BE SCRAPED. The user has verified the following sources exist: ${JSON.stringify(sources)}. 
        Clearly state in your summary that this analysis is based on limited data and the confidence scores should be low (below 40).`;
 
+  const metricsContext = computedMetrics
+    ? `\nPRE-COMPUTED METRICS (use these exact values, do not recalculate):\n${JSON.stringify(computedMetrics)}`
+    : '';
+
   const prompt = `Perform a Sentiment Analysis and UX Audit for: "${url}".
 
 ${reviewContext}
-const metricsContext = computedMetrics
-  ? `\nPRE-COMPUTED METRICS (use these exact values, do not recalculate):\n${JSON.stringify(computedMetrics)}`
-  : '';
-  ${metricsContext}
+${metricsContext}
 
 INSTRUCTIONS:
 - Base ALL metrics and scores ONLY on the real review data provided above.
 - If no real reviews were provided, set all confidence scores below 40 and clearly note limited data.
 - Do NOT invent review text. The "verificationData" array must ONLY contain reviews from the REAL SCRAPED REVIEWS list above.
-- Calculate overallSatisfaction from average star ratings in the real data.
-- Calculate NPS from the distribution of 1-2 star (detractors), 3 star (passives), 4-5 star (promoters).
-- Identify real themes from actual review text.
-
-REQUIRED JSON STRUCTURE:
-{
-  "url": string,
-  "timestamp": string (ISO),
-  "sources": ${JSON.stringify(sources)},
-  "metrics": {
-    "overallSatisfaction": { "value": number 0-100, "confidence": number 0-100, "dataPoints": number },
-    "taskCompletion": { "value": number 0-100, "confidence": number 0-100, "dataPoints": number },
-    "abandonmentRate": { "value": number 0-100, "confidence": number 0-100, "dataPoints": number },
-    "nps": { "value": number -100 to 100, "confidence": number 0-100, "dataPoints": number }
-  },
-  "summary": { "overview": string, "keyFindings": string, "overallImpression": string },
-  "visuals": {
-    "desktopVsMobile": { "metrics": ["Navigation","Readability","Speed","Accessibility"], "desktop": [n,n,n,n], "mobile": [n,n,n,n] },
-    "issuePriority": [ { "category": string, "value": number, "severity": "critical"|"high"|"medium" } ],
-    "sentimentTrend": [ { "date": string, "score": number } ]
-  },
-  "usabilityParadox": string,
-  "wcagIssues": [ { "standard": string, "description": string } ],
-  "iaIssues": [string],
-  "digitalEquityImpact": string,
-  "recommendations": [ { "id": number, "title": string, "impact": "High"|"Medium"|"Low", "description": string, "timeline": string, "outcome": string } ],
-  "verificationData": [ { "source": string, "rating": number, "date": string, "review": string, "aiInterpretation": string, "sentiment": "positive"|"negative"|"neutral" } ],
-  "quotes": { "positive": [{ "text": string, "source": string }], "negative": [{ "text": string, "source": string }] }
-}`;
-
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-preview-04-17',
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      thinkingConfig: { thinkingBudget: 5000 }
-    }
-  });
-
-  return safeParse(response.text, "Sentiment Audit") || null;
-};
+- Calculate overallS
 
 export const getChartConfigFromNL = async (query: string, availableMetrics: string[]): Promise<ChartConfig> => {
   try {
