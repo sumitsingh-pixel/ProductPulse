@@ -13,6 +13,7 @@ import { SentimentAudit, UserRole, ReviewSource, MetricWithConfidence } from '..
 import { Chart, registerables } from 'chart.js';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { databaseService } from '../services/databaseService';
 
 Chart.register(...registerables);
 
@@ -60,6 +61,7 @@ export const SentimentAnalyzer: React.FC<Props> = ({ role }) => {
     setError(null);
     try {
       const result = await performSentimentAudit(url, sources);
+      await databaseService.saveSentimentAudit(url, result);
       setAudit(result);
       setFlowStep('results');
       setActiveTab('assessment');
