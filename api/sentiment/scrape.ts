@@ -1,6 +1,7 @@
 // api/sentiment/scrape.ts
 
 export default async function handler(req: any, res: any) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { sources } = req.body;
@@ -61,18 +62,38 @@ function extractTrustpilotDomain(url: string): string | null {
 
 // --- Scrapers ---
 
+// async function scrapePlayStore(appId: string) {
+//   try {
+//     const gplay = await import('google-play-scraper');
+//     const result = await gplay.default.reviews({ appId, num: 100, lang: 'en', country: 'us' });
+//     return result.data.map((r: any) => ({
+//       author: r.userName,
+//       rating: r.score,
+//       review_text: r.text,
+//       review_date: r.date?.toISOString().split('T')[0] || '',
+//     }));
+//   } catch (err) {
+//     console.warn('[Scrape] google-play-scraper not available or failed:', err);
+//     return [];
+//   }
+// }
+
 async function scrapePlayStore(appId: string) {
   try {
     const gplay = await import('google-play-scraper');
-    const result = await gplay.default.reviews({ appId, num: 100, lang: 'en', country: 'us' });
-    return result.data.map((r: any) => ({
-      author: r.userName,
-      rating: r.score,
-      review_text: r.text,
-      review_date: r.date?.toISOString().split('T')[0] || '',
-    }));
+    const timeoutPromise = new Promise<any[]>((_, reject) =>
+      setTimeout(() => reject(new Error('Play Store timeout')), 15000)
+    );
+    const scrapePromise = gplay.default.reviews({ appId, num: 100, lang: 'en', country: 'us' })
+      .then((result: any) => result.data.map((r: any) => ({
+        author: r.userName,
+        rating: r.score,
+        review_text: r.text,
+        review_date: r.date?.toISOString().split('T')[0] || '',
+      })));
+    return await Promise.race([scrapePromise, timeoutPromise]);
   } catch (err) {
-    console.warn('[Scrape] google-play-scraper not available or failed:', err);
+    console.warn('[Scrape] Play Store failed:', err);
     return [];
   }
 }
