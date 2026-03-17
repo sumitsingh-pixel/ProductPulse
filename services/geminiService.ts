@@ -47,51 +47,62 @@ const safeParse = (text: string | undefined, context: string) => {
 //     return [];
 //   }
 // };
-
 export const detectReviewSources = async (url: string): Promise<ReviewSource[]> => {
-  // Extract domain to build likely review source URLs
-  let domain = '';
-  try { domain = new URL(url).hostname.replace('www.', ''); } catch { domain = url; }
+  try {
+    const ai = getAIClient();
+    const prompt = `You are a research assistant with knowledge of major apps and websites.
 
-  const appName = domain.split('.')[0]; // e.g. "myapp" from "myapp.com"
+For the product/brand at URL "${url}", find the REAL review platform listings.
 
-  // Return structured guesses — user confirms/edits these in the UI before audit runs
-  const sources: ReviewSource[] = [
-    {
-      id: 'play_store',
-      name: 'Play Store',
-      url: `https://play.google.com/store/apps/details?id=com.${appName}`,
-      count: 0,
-      detected: false,
-      status: 'unverified'
-    },
-    {
-      id: 'app_store',
-      name: 'App Store',
-      url: `https://apps.apple.com/app/${appName}`,
-      count: 0,
-      detected: false,
-      status: 'unverified'
-    },
-    {
-      id: 'trustpilot',
-      name: 'Trustpilot',
-      url: `https://www.trustpilot.com/review/${domain}`,
-      count: 0,
-      detected: false,
-      status: 'unverified'
-    },
-    {
-      id: 'google_business',
-      name: 'Google Business',
-      url: `https://www.google.com/search?q=${domain}+reviews`,
-      count: 0,
-      detected: false,
-      status: 'unverified'
-    }
-  ];
+Return a JSON array for these platforms: Play Store, App Store, Trustpilot.
 
-  return sources;
+Rules:
+- Use the REAL app package ID (e.g. com.linkedin.android, not com.linkedin)
+- Use the REAL App Store numeric ID in the URL (e.g. https://apps.apple.com/app/id288429040)
+- Only include a source if you are confident it exists for this brand
+- For "count", provide your best estimate of total reviews (e.g. 500000 for LinkedIn)
+- Set detected: true for all sources you include
+
+Return ONLY a JSON array, no other text:
+[
+  {
+    "id": "play_store",
+    "name": "Play Store",
+    "url": "https://play.google.com/store/apps/details?id=REAL_PACKAGE_ID",
+    "count": 500000,
+    "detected": true,
+    "status": "verified"
+  },
+  {
+    "id": "app_store", 
+    "name": "App Store",
+    "url": "https://apps.apple.com/app/id288429040",
+    "count": 300000,
+    "detected": true,
+    "status": "verified"
+  },
+  {
+    "id": "trustpilot",
+    "name": "Trustpilot", 
+    "url": "https://www.trustpilot.com/review/linkedin.com",
+    "count": 5000,
+    "detected": true,
+    "status": "verified"
+  }
+]`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: prompt,
+      config: { responseMimeType: "application/json" }
+    });
+
+    const result = safeParse(response.text, "Source Detection");
+    return result || [];
+  } catch (err) {
+    console.error('[Source Detection] Failed:', err);
+    return [];
+  }
 };
 
 // export const performSentimentAudit = async (url: string, sources: ReviewSource[], rawData?: string): Promise<SentimentAudit> => {
