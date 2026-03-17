@@ -251,7 +251,8 @@ export const performSentimentAudit = async (url: string, sources: ReviewSource[]
   let computedMetrics: any = null;
 
   try {
-    const scrapeRes = await fetch('/api/sentiment/scrape', {
+    const scraperUrl = import.meta.env.VITE_SCRAPER_URL || '';
+const scrapeRes = await fetch(`${scraperUrl}/scrape`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sources })
