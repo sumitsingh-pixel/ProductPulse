@@ -156,8 +156,11 @@ export const performSentimentAudit = async (url: string, sources: ReviewSource[]
       body: JSON.stringify({ sources })
     });
     if (scrapeRes.ok) {
+      // const scrapeData = await scrapeRes.json();
+      // realReviews = scrapeData.reviews || [];
       const scrapeData = await scrapeRes.json();
-      realReviews = scrapeData.reviews || [];
+realReviews = scrapeData.reviews || [];
+const computedMetrics = scrapeData.metrics || null; 
     }
   } catch (err) {
     console.warn('[Sentiment] Scrape step failed, proceeding with empty reviews:', err);
@@ -176,6 +179,10 @@ export const performSentimentAudit = async (url: string, sources: ReviewSource[]
   const prompt = `Perform a Sentiment Analysis and UX Audit for: "${url}".
 
 ${reviewContext}
+const metricsContext = computedMetrics
+  ? `\nPRE-COMPUTED METRICS (use these exact values, do not recalculate):\n${JSON.stringify(computedMetrics)}`
+  : '';
+  ${metricsContext}
 
 INSTRUCTIONS:
 - Base ALL metrics and scores ONLY on the real review data provided above.
