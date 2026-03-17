@@ -9,6 +9,69 @@ export default async function handler(req: any, res: any) {
   if (!sources || !Array.isArray(sources)) {
     return res.status(400).json({ error: 'sources array required' });
   }
+  // Add this function anywhere in the file before the handler's return statement
+
+function computeMetrics(reviews: any[]) {
+  if (reviews.length === 0) return null;
+
+  const total = reviews.length;
+
+  // --- Overall Satisfaction ---
+  const avgStarRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / total;
+  const overallSatisfaction = {
+    value: Math.round((avgStarRating / 5) * 100),
+    confidence: Math.min(95, 40 + Math.floor(total / 10)), // more reviews = higher confidence
+    dataPoints: total
+  };
+
+  // --- Task Completion ---
+  const successKeywords = ["easy", "worked", "successful", "simple", "smooth", "great", "love", "perfect"];
+  const failKeywords    = ["couldn't", "confusing", "gave up", "broken", "failed", "doesn't work", "useless", "terrible"];
+
+  let successCount = 0;
+  let failCount    = 0;
+
+  reviews.forEach(r => {
+    const text = (r.review_text || '').toLowerCase();
+    if (successKeywords.some(k => text.includes(k))) successCount++;
+    if (failKeywords.some(k => text.includes(k)))    failCount++;
+  });
+
+  const taskCompletionValue = Math.round((successCount / total) * 100);
+  const taskCompletion = {
+    value: taskCompletionValue,
+    confidence: Math.min(90, 35 + Math.floor(total / 10)),
+    dataPoints: total
+  };
+
+  // --- Abandonment Rate ---
+  const abandonmentKeywords = ["gave up", "quit", "too complicated", "couldn't finish", "uninstalled", "deleted"];
+  const abandonCount = reviews.filter(r =>
+    abandonmentKeywords.some(k => (r.review_text || '').toLowerCase().includes(k))
+  ).length;
+
+  const abandonment = {
+    value: 100 - taskCompletionValue,  // mirrors task completion as you defined
+    confidence: taskCompletion.confidence,
+    dataPoints: total
+  };
+
+  // --- NPS ---
+  const promoters   = reviews.filter(r => r.rating === 5).length;
+  const detractors  = reviews.filter(r => r.rating <= 3).length;
+  const npsValue    = Math.round(((promoters - detractors) / total) * 100);
+
+  const nps = {
+    value: Math.max(-100, Math.min(100, npsValue)),
+    confidence: Math.min(95, 40 + Math.floor(total / 10)),
+    dataPoints: total
+  };
+
+  return { overallSatisfaction, taskCompletion, abandonmentRate: abandonment, nps };
+}
+
+
+  
 
   const allReviews: any[] = [];
 
@@ -39,8 +102,9 @@ export default async function handler(req: any, res: any) {
       console.error(`[Scrape] Failed for ${source.name}:`, err.message);
     }
   }
-
-  return res.status(200).json({ reviews: allReviews });
+const metrics = computeMetrics(allReviews);
+return res.status(200).json({ reviews: allReviews, metrics });
+  // return res.status(200).json({ reviews: allReviews });
 }
 
 function extractPlayStoreId(url: string): string | null {
