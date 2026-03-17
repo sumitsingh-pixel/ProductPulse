@@ -2,11 +2,7 @@
   "functions": {
     "api/**/*.ts": {
       "memory": 1024,
-      "maxDuration": 10
-    },
-    "api/sentiment/*.ts": {
-  "memory": 1024,
-  "maxDuration": 30
-}
+      "maxDuration": 30
+    }
   }
 }
