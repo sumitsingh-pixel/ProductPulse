@@ -320,4 +320,26 @@ export const databaseService = {
     if (data.length > 0) return data.map(d => d.column_name);
     return ['tenant_id', 'site_id', 'kpi_date'];
   },
+  // SENTIMENT AUDITS
+  async saveSentimentAudit(url: string, result: any): Promise<string | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data, error } = await supabase
+      .from('sentiment_audits')
+      .insert([{ user_id: user.id, url, result }])
+      .select('id')
+      .single();
+    if (error) { console.error('[DB] Save audit failed:', error); return null; }
+    return data.id;
+  },
+
+  async getSentimentAudits(): Promise<any[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    return safeQuery(
+      () => supabase.from('sentiment_audits').select('id, url, created_at, result->summary').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
+      [],
+      'Get Sentiment Audits'
+    );
+  },
 };
