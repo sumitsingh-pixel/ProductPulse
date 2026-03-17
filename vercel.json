@@ -1,9 +1,12 @@
-
 {
   "functions": {
     "api/**/*.ts": {
       "memory": 1024,
       "maxDuration": 10
+    },
+    "api/sentiment/scrape.ts": {
+      "memory": 1024,
+      "maxDuration": 30
     }
   }
 }
