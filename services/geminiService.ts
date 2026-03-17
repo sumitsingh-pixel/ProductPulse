@@ -264,7 +264,7 @@ export const performSentimentAudit = async (url: string, sources: ReviewSource[]
     ? `\nPRE-COMPUTED METRICS (use these exact values, do not recalculate):\n${JSON.stringify(computedMetrics)}`
     : '';
 
-  const prompt = `Perform a Sentiment Analysis and UX Audit for: "${url}".
+ const prompt = `Perform a Sentiment Analysis and UX Audit for: "${url}".
 
 ${reviewContext}
 ${metricsContext}
@@ -273,8 +273,47 @@ INSTRUCTIONS:
 - Base ALL metrics and scores ONLY on the real review data provided above.
 - If no real reviews were provided, set all confidence scores below 40 and clearly note limited data.
 - Do NOT invent review text. The "verificationData" array must ONLY contain reviews from the REAL SCRAPED REVIEWS list above.
-- Calculate overallS
+- Calculate overallSatisfaction from average star ratings in the real data.
+- Calculate NPS from the distribution of 1-2 star (detractors), 3 star (passives), 4-5 star (promoters).
+- Identify real themes from actual review text.
 
+REQUIRED JSON STRUCTURE:
+{
+  "url": string,
+  "timestamp": string (ISO),
+  "sources": ${JSON.stringify(sources)},
+  "metrics": {
+    "overallSatisfaction": { "value": number 0-100, "confidence": number 0-100, "dataPoints": number },
+    "taskCompletion": { "value": number 0-100, "confidence": number 0-100, "dataPoints": number },
+    "abandonmentRate": { "value": number 0-100, "confidence": number 0-100, "dataPoints": number },
+    "nps": { "value": number -100 to 100, "confidence": number 0-100, "dataPoints": number }
+  },
+  "summary": { "overview": string, "keyFindings": string, "overallImpression": string },
+  "visuals": {
+    "desktopVsMobile": { "metrics": ["Navigation","Readability","Speed","Accessibility"], "desktop": [n,n,n,n], "mobile": [n,n,n,n] },
+    "issuePriority": [ { "category": string, "value": number, "severity": "critical"|"high"|"medium" } ],
+    "sentimentTrend": [ { "date": string, "score": number } ]
+  },
+  "usabilityParadox": string,
+  "wcagIssues": [ { "standard": string, "description": string } ],
+  "iaIssues": [string],
+  "digitalEquityImpact": string,
+  "recommendations": [ { "id": number, "title": string, "impact": "High"|"Medium"|"Low", "description": string, "timeline": string, "outcome": string } ],
+  "verificationData": [ { "source": string, "rating": number, "date": string, "review": string, "aiInterpretation": string, "sentiment": "positive"|"negative"|"neutral" } ],
+  "quotes": { "positive": [{ "text": string, "source": string }], "negative": [{ "text": string, "source": string }] }
+}`;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash-preview-04-17',
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      thinkingConfig: { thinkingBudget: 5000 }
+    }
+  });
+
+  return safeParse(response.text, "Sentiment Audit") || null;
+};
 export const getChartConfigFromNL = async (query: string, availableMetrics: string[]): Promise<ChartConfig> => {
   try {
     const ai = getAIClient();
