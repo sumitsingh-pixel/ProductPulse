@@ -19,86 +19,208 @@ const safeParse = (text: string | undefined, context: string) => {
   }
 };
 
-export const detectReviewSources = async (url: string): Promise<ReviewSource[]> => {
-  try {
-    const ai = getAIClient();
-    const prompt = `Act as a web scraper assistant. For the URL "${url}", predict/detect the most likely review platform URLs (Google Business, App Store, Play Store, Trustpilot). 
-    Base this on standard patterns for this brand/URL.
+// export const detectReviewSources = async (url: string): Promise<ReviewSource[]> => {
+//   try {
+//     const ai = getAIClient();
+//     const prompt = `Act as a web scraper assistant. For the URL "${url}", predict/detect the most likely review platform URLs (Google Business, App Store, Play Store, Trustpilot). 
+//     Base this on standard patterns for this brand/URL.
     
-    Return JSON array of ReviewSource objects:
+//     Return JSON array of ReviewSource objects:
+//     {
+//       "id": string (unique slug),
+//       "name": string (e.g. "App Store"),
+//       "url": string (likely or real URL),
+//       "count": number (estimated review count),
+//       "detected": boolean (true if highly likely to exist)
+//     }`;
+
+//     const response = await ai.models.generateContent({
+//       model: 'gemini-3-flash-preview',
+//       contents: prompt,
+//       config: { responseMimeType: "application/json" }
+//     });
+
+//     const result = safeParse(response.text, "Source Detection");
+//     return result?.map((s: any) => ({ ...s, status: s.detected ? 'verified' : 'unverified' })) || [];
+//   } catch (err) {
+//     console.error(err);
+//     return [];
+//   }
+// };
+
+export const detectReviewSources = async (url: string): Promise<ReviewSource[]> => {
+  // Extract domain to build likely review source URLs
+  let domain = '';
+  try { domain = new URL(url).hostname.replace('www.', ''); } catch { domain = url; }
+
+  const appName = domain.split('.')[0]; // e.g. "myapp" from "myapp.com"
+
+  // Return structured guesses — user confirms/edits these in the UI before audit runs
+  const sources: ReviewSource[] = [
     {
-      "id": string (unique slug),
-      "name": string (e.g. "App Store"),
-      "url": string (likely or real URL),
-      "count": number (estimated review count),
-      "detected": boolean (true if highly likely to exist)
-    }`;
+      id: 'play_store',
+      name: 'Play Store',
+      url: `https://play.google.com/store/apps/details?id=com.${appName}`,
+      count: 0,
+      detected: false,
+      status: 'unverified'
+    },
+    {
+      id: 'app_store',
+      name: 'App Store',
+      url: `https://apps.apple.com/app/${appName}`,
+      count: 0,
+      detected: false,
+      status: 'unverified'
+    },
+    {
+      id: 'trustpilot',
+      name: 'Trustpilot',
+      url: `https://www.trustpilot.com/review/${domain}`,
+      count: 0,
+      detected: false,
+      status: 'unverified'
+    },
+    {
+      id: 'google_business',
+      name: 'Google Business',
+      url: `https://www.google.com/search?q=${domain}+reviews`,
+      count: 0,
+      detected: false,
+      status: 'unverified'
+    }
+  ];
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: { responseMimeType: "application/json" }
-    });
-
-    const result = safeParse(response.text, "Source Detection");
-    return result?.map((s: any) => ({ ...s, status: s.detected ? 'verified' : 'unverified' })) || [];
-  } catch (err) {
-    console.error(err);
-    return [];
-  }
+  return sources;
 };
 
-export const performSentimentAudit = async (url: string, sources: ReviewSource[], rawData?: string): Promise<SentimentAudit> => {
-  try {
-    const ai = getAIClient();
-    const prompt = `Perform a comprehensive Sentiment Analysis and UX Audit for the URL: "${url}".
+// export const performSentimentAudit = async (url: string, sources: ReviewSource[], rawData?: string): Promise<SentimentAudit> => {
+//   try {
+//     const ai = getAIClient();
+//     const prompt = `Perform a comprehensive Sentiment Analysis and UX Audit for the URL: "${url}".
     
-    SOURCES TO ANALYZE: ${JSON.stringify(sources)}
-    ${rawData ? `USER PROVIDED ADDITIONAL DATA: ${rawData}` : ''}
+//     SOURCES TO ANALYZE: ${JSON.stringify(sources)}
+//     ${rawData ? `USER PROVIDED ADDITIONAL DATA: ${rawData}` : ''}
 
-    REQUIRED JSON STRUCTURE:
-    {
-      "url": string,
-      "timestamp": string,
-      "sources": Array<ReviewSource>,
-      "metrics": {
-        "overallSatisfaction": { "value": 0-100, "confidence": 0-100, "dataPoints": number },
-        "taskCompletion": { "value": 0-100, "confidence": 0-100, "dataPoints": number },
-        "abandonmentRate": { "value": 0-100, "confidence": 0-100, "dataPoints": number },
-        "nps": { "value": -100 to 100, "confidence": 0-100, "dataPoints": number }
-      },
-      "summary": { "overview": string, "keyFindings": string, "overallImpression": string },
-      "visuals": {
-        "desktopVsMobile": { "metrics": ["Navigation", "Readability", "Speed", "Accessibility"], "desktop": [number, number, number, number], "mobile": [number, number, number, number] },
-        "issuePriority": [ { "category": string, "value": number, "severity": "critical"|"high"|"medium" } ],
-        "sentimentTrend": [ { "date": string, "score": number } ]
-      },
-      "usabilityParadox": string,
-      "wcagIssues": [ { "standard": string, "description": string } ],
-      "iaIssues": [string],
-      "digitalEquityImpact": string,
-      "recommendations": [ { "id": number, "title": string, "impact": "High"|"Medium"|"Low", "description": string, "timeline": string, "outcome": string } ],
-      "verificationData": [ { "source": string, "rating": number, "date": string, "review": string, "aiInterpretation": string, "sentiment": "positive"|"negative"|"neutral" } ],
-      "quotes": { "positive": [{ "text": string, "source": string }], "negative": [{ "text": string, "source": string }] }
-    }
+//     REQUIRED JSON STRUCTURE:
+//     {
+//       "url": string,
+//       "timestamp": string,
+//       "sources": Array<ReviewSource>,
+//       "metrics": {
+//         "overallSatisfaction": { "value": 0-100, "confidence": 0-100, "dataPoints": number },
+//         "taskCompletion": { "value": 0-100, "confidence": 0-100, "dataPoints": number },
+//         "abandonmentRate": { "value": 0-100, "confidence": 0-100, "dataPoints": number },
+//         "nps": { "value": -100 to 100, "confidence": 0-100, "dataPoints": number }
+//       },
+//       "summary": { "overview": string, "keyFindings": string, "overallImpression": string },
+//       "visuals": {
+//         "desktopVsMobile": { "metrics": ["Navigation", "Readability", "Speed", "Accessibility"], "desktop": [number, number, number, number], "mobile": [number, number, number, number] },
+//         "issuePriority": [ { "category": string, "value": number, "severity": "critical"|"high"|"medium" } ],
+//         "sentimentTrend": [ { "date": string, "score": number } ]
+//       },
+//       "usabilityParadox": string,
+//       "wcagIssues": [ { "standard": string, "description": string } ],
+//       "iaIssues": [string],
+//       "digitalEquityImpact": string,
+//       "recommendations": [ { "id": number, "title": string, "impact": "High"|"Medium"|"Low", "description": string, "timeline": string, "outcome": string } ],
+//       "verificationData": [ { "source": string, "rating": number, "date": string, "review": string, "aiInterpretation": string, "sentiment": "positive"|"negative"|"neutral" } ],
+//       "quotes": { "positive": [{ "text": string, "source": string }], "negative": [{ "text": string, "source": string }] }
+//     }
 
-    GENERATE ACCURATE DATA BASED ON REAL-WORLD FEEDBACK FOR THIS URL. 
-    Ensure "verificationData" has at least 10 sample reviews for the user to check accuracy.`;
+//     GENERATE ACCURATE DATA BASED ON REAL-WORLD FEEDBACK FOR THIS URL. 
+//     Ensure "verificationData" has at least 10 sample reviews for the user to check accuracy.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: { 
-        responseMimeType: "application/json",
-        thinkingConfig: { thinkingBudget: 5000 }
-      }
+//     const response = await ai.models.generateContent({
+//       model: 'gemini-3-flash-preview',
+//       contents: prompt,
+//       config: { 
+//         responseMimeType: "application/json",
+//         thinkingConfig: { thinkingBudget: 5000 }
+//       }
+//     });
+
+//     return safeParse(response.text, "Sentiment Audit") || null;
+//   } catch (err) {
+//     console.error(err);
+//     throw err;
+//   }
+// };
+export const performSentimentAudit = async (url: string, sources: ReviewSource[]): Promise<SentimentAudit> => {
+  // Step 1: Fetch real reviews from our Vercel scrape endpoint
+  let realReviews: any[] = [];
+  try {
+    const scrapeRes = await fetch('/api/sentiment/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sources })
     });
-
-    return safeParse(response.text, "Sentiment Audit") || null;
+    if (scrapeRes.ok) {
+      const scrapeData = await scrapeRes.json();
+      realReviews = scrapeData.reviews || [];
+    }
   } catch (err) {
-    console.error(err);
-    throw err;
+    console.warn('[Sentiment] Scrape step failed, proceeding with empty reviews:', err);
   }
+
+  const hasRealData = realReviews.length > 0;
+
+  // Step 2: Build Gemini prompt with real review text as context
+  const ai = getAIClient();
+
+  const reviewContext = hasRealData
+    ? `REAL SCRAPED REVIEWS (${realReviews.length} reviews):\n${JSON.stringify(realReviews.slice(0, 80))}`
+    : `NO REAL REVIEWS COULD BE SCRAPED. The user has verified the following sources exist: ${JSON.stringify(sources)}. 
+       Clearly state in your summary that this analysis is based on limited data and the confidence scores should be low (below 40).`;
+
+  const prompt = `Perform a Sentiment Analysis and UX Audit for: "${url}".
+
+${reviewContext}
+
+INSTRUCTIONS:
+- Base ALL metrics and scores ONLY on the real review data provided above.
+- If no real reviews were provided, set all confidence scores below 40 and clearly note limited data.
+- Do NOT invent review text. The "verificationData" array must ONLY contain reviews from the REAL SCRAPED REVIEWS list above.
+- Calculate overallSatisfaction from average star ratings in the real data.
+- Calculate NPS from the distribution of 1-2 star (detractors), 3 star (passives), 4-5 star (promoters).
+- Identify real themes from actual review text.
+
+REQUIRED JSON STRUCTURE:
+{
+  "url": string,
+  "timestamp": string (ISO),
+  "sources": ${JSON.stringify(sources)},
+  "metrics": {
+    "overallSatisfaction": { "value": number 0-100, "confidence": number 0-100, "dataPoints": number },
+    "taskCompletion": { "value": number 0-100, "confidence": number 0-100, "dataPoints": number },
+    "abandonmentRate": { "value": number 0-100, "confidence": number 0-100, "dataPoints": number },
+    "nps": { "value": number -100 to 100, "confidence": number 0-100, "dataPoints": number }
+  },
+  "summary": { "overview": string, "keyFindings": string, "overallImpression": string },
+  "visuals": {
+    "desktopVsMobile": { "metrics": ["Navigation","Readability","Speed","Accessibility"], "desktop": [n,n,n,n], "mobile": [n,n,n,n] },
+    "issuePriority": [ { "category": string, "value": number, "severity": "critical"|"high"|"medium" } ],
+    "sentimentTrend": [ { "date": string, "score": number } ]
+  },
+  "usabilityParadox": string,
+  "wcagIssues": [ { "standard": string, "description": string } ],
+  "iaIssues": [string],
+  "digitalEquityImpact": string,
+  "recommendations": [ { "id": number, "title": string, "impact": "High"|"Medium"|"Low", "description": string, "timeline": string, "outcome": string } ],
+  "verificationData": [ { "source": string, "rating": number, "date": string, "review": string, "aiInterpretation": string, "sentiment": "positive"|"negative"|"neutral" } ],
+  "quotes": { "positive": [{ "text": string, "source": string }], "negative": [{ "text": string, "source": string }] }
+}`;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash-preview-04-17',
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      thinkingConfig: { thinkingBudget: 5000 }
+    }
+  });
+
+  return safeParse(response.text, "Sentiment Audit") || null;
 };
 
 export const getChartConfigFromNL = async (query: string, availableMetrics: string[]): Promise<ChartConfig> => {
