@@ -28,6 +28,7 @@ export const SentimentAnalyzer: React.FC<Props> = ({ role }) => {
   const [flowStep, setFlowStep] = useState<FlowStep>('input');
   const [sources, setSources] = useState<ReviewSource[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState(''); 
   const [audit, setAudit] = useState<SentimentAudit | null>(null);
   const [activeTab, setActiveTab] = useState<'assessment' | 'visual' | 'action' | 'verification'>('assessment');
   const [error, setError] = useState<string | null>(null);
