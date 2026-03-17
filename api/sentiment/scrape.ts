@@ -138,15 +138,29 @@ async function scrapePlayStore(appId: string) {
   return [];
 }
 
+// async function scrapeAppStore(appId: string) {
+//   // Apple provides an official RSS feed for reviews — no auth needed
+//   const res = await fetch(
+//     `https://itunes.apple.com/rss/customerreviews/id=${appId}/sortBy=mostRecent/json`
+//   );
+//   if (!res.ok) return [];
+//   const data = await res.json();
+//   const entries = data?.feed?.entry || [];
+//   // First entry is app metadata, skip it
+//   return entries.slice(1).map((e: any) => ({
+//     author: e.author?.name?.label || 'Anonymous',
+//     rating: parseInt(e['im:rating']?.label || '0', 10),
+//     review_text: e.content?.label || '',
+//     review_date: e.updated?.label?.split('T')[0] || '',
+//   }));
+// }
 async function scrapeAppStore(appId: string) {
-  // Apple provides an official RSS feed for reviews — no auth needed
   const res = await fetch(
     `https://itunes.apple.com/rss/customerreviews/id=${appId}/sortBy=mostRecent/json`
   );
   if (!res.ok) return [];
   const data = await res.json();
   const entries = data?.feed?.entry || [];
-  // First entry is app metadata, skip it
   return entries.slice(1).map((e: any) => ({
     author: e.author?.name?.label || 'Anonymous',
     rating: parseInt(e['im:rating']?.label || '0', 10),
