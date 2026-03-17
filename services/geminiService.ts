@@ -230,8 +230,12 @@ export const detectReviewSources = async (url: string): Promise<ReviewSource[]> 
 //   return safeParse(response.text, "Sentiment Audit") || null;
 // };
 
+// export const performSentimentAudit = async (url: string, sources: ReviewSource[]): Promise<SentimentAudit> => {
+//   // Step 1: Fetch real reviews from our Vercel scrape endpoint
+//   let realReviews: any[] = [];
 export const performSentimentAudit = async (url: string, sources: ReviewSource[]): Promise<SentimentAudit> => {
-  // Step 1: Fetch real reviews from our Vercel scrape endpoint
+  try {
+  // Step 1: Fetch real reviews...
   let realReviews: any[] = [];
   let computedMetrics: any = null;
 
@@ -312,7 +316,15 @@ REQUIRED JSON STRUCTURE:
     }
   });
 
-  return safeParse(response.text, "Sentiment Audit") || null;
+//   return safeParse(response.text, "Sentiment Audit") || null;
+// };
+    const parsed = safeParse(response.text, "Sentiment Audit");
+    if (!parsed) throw new Error("Gemini returned unparseable JSON");
+    return parsed;
+  } catch (err) {
+    console.error("[Sentiment Audit] Failed:", err);
+    throw err;
+  }
 };
 export const getChartConfigFromNL = async (query: string, availableMetrics: string[]): Promise<ChartConfig> => {
   try {
