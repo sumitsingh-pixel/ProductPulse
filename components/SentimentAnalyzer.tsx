@@ -56,27 +56,43 @@ export const SentimentAnalyzer: React.FC<Props> = ({ role }) => {
     }
   };
 
-  const handleRunAudit = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // const result = await performSentimentAudit(url, sources);
-      // await databaseService.saveSentimentAudit(url, result);
-      // setAudit(result);
-      const result = await performSentimentAudit(url, sources);
-if (!result || !result.metrics) {
-  setError("Analysis returned incomplete data. Please try again.");
-  return;
-}
-setAudit(result);
-setFlowStep('results');
-      setActiveTab('assessment');
-    } catch (err: any) {
-      setError(err.message || "Audit engine failure.");
-    } finally {
-      setLoading(false);
+ const handleRunAudit = async () => {
+  setLoading(true);
+  setError(null);
+
+  const messages = [
+    'Scraping reviews from verified sources...',
+    'Processing user feedback data...',
+    'Running sentiment analysis...',
+    'Computing NPS and satisfaction scores...',
+    'Generating audit report...',
+  ];
+  let msgIndex = 0;
+  setLoadingMessage(messages[0]);
+  const msgInterval = setInterval(() => {
+    msgIndex = (msgIndex + 1) % messages.length;
+    setLoadingMessage(messages[msgIndex]);
+  }, 3000);
+
+  try {
+    const result = await performSentimentAudit(url, sources);
+    clearInterval(msgInterval);
+    if (!result || !result.metrics) {
+      setError("Analysis returned incomplete data. Please try again.");
+      return;
     }
-  };
+    await databaseService.saveSentimentAudit(url, result);
+    setAudit(result);
+    setFlowStep('results');
+    setActiveTab('assessment');
+  } catch (err: any) {
+    clearInterval(msgInterval);
+    setError(err.message || "Audit engine failure.");
+  } finally {
+    setLoading(false);
+    setLoadingMessage('');
+  }
+};
 
   const toggleSourceVerification = (id: string) => {
     setSources(prev => prev.map(s => s.id === id ? { ...s, status: s.status === 'verified' ? 'unverified' : 'verified' } : s));
@@ -557,7 +573,7 @@ setFlowStep('results');
         </div>
       )}
 
-      {loading && (flowStep === 'results' || flowStep === 'sources') && (
+      /* {loading && (flowStep === 'results' || flowStep === 'sources') && (
         <div className="py-24 flex flex-col items-center justify-center space-y-8 animate-in fade-in">
            <div className="relative">
              <div className="w-24 h-24 border-4 border-teal-500/10 border-t-teal-500 rounded-full animate-spin"></div>
@@ -568,7 +584,39 @@ setFlowStep('results');
              <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.4em] animate-pulse">Processing datapoints across clusters...</p>
            </div>
         </div>
-      )}
+      )} */
+      {loading && flowStep === 'sources' && (
+  <div className="py-24 flex flex-col items-center justify-center space-y-8 animate-in fade-in">
+    <div className="relative">
+      <div className="w-24 h-24 border-4 border-teal-500/10 border-t-teal-500 rounded-full animate-spin"></div>
+      <Activity className="absolute inset-0 m-auto w-8 h-8 text-teal-400 animate-pulse" />
+    </div>
+    <div className="text-center space-y-2">
+      <h4 className="text-xl font-black text-white uppercase tracking-tighter">
+        {flowStep === 'sources' && !loadingMessage ? 'Detecting Review Sources...' : loadingMessage || 'Analyzing...'}
+      </h4>
+      <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.4em] animate-pulse">
+        This may take a minute — fetching real reviews
+      </p>
+    </div>
+  </div>
+)}
+      {loading && loadingMessage && (
+  <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center space-y-10">
+    <div className="relative">
+      <div className="w-32 h-32 border-4 border-teal-500/20 border-t-teal-500 rounded-full animate-spin"></div>
+      <div className="w-24 h-24 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin absolute inset-0 m-auto" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+      <Activity className="absolute inset-0 m-auto w-8 h-8 text-teal-400 animate-pulse" />
+    </div>
+    <div className="text-center space-y-3 max-w-sm">
+      <h4 className="text-2xl font-black text-white uppercase tracking-tighter">Running Audit</h4>
+      <p className="text-sm font-bold text-teal-400 animate-pulse">{loadingMessage}</p>
+      <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em]">
+        Scraping real reviews · Computing metrics · Generating insights
+      </p>
+    </div>
+  </div>
+)}
     </div>
   );
 };
